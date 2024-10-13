@@ -1,6 +1,38 @@
 const mysql = require('mysql2');
 const amqp = require('amqplib');
 
+
+const receiveMessage = async () => {
+    try {
+        // RabbitMQ connection URL with authentication
+        const rabbitMQUrl = 'amqp://admin:password@localhost'; // Replace with your username, password, and host
+        const connection = await amqp.connect(rabbitMQUrl);
+        const channel = await connection.createChannel();
+        const queue = 'home_hydro';
+
+        // Assert (create) a queue if it doesn't already exist
+        await channel.assertQueue(queue);
+
+        console.log(`Waiting for messages in queue: "${queue}"`);
+
+        // Consume messages from the queue
+        channel.consume(queue, (msg) => {
+            if (msg !== null) {
+                const messageContent = msg.content.toString();
+                console.log(`Received message: "${messageContent}"`);
+
+                // Acknowledge the message
+                channel.ack(msg);
+            }
+        });
+    } catch (error) {
+        console.error('Error receiving messages:', error);
+    }
+};
+
+
+
+
 var con = mysql.createPool({
     host: "localhost",
     user: "home_hydro",
@@ -50,4 +82,6 @@ function insert_telemetry() {
 };
 
 
-insert_telemetry();
+//insert_telemetry();
+// Call the function to start receiving messages
+receiveMessage();
