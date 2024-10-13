@@ -1,3 +1,22 @@
+/**
+ * -------------------------------------------------------------------------
+ * Project Name:       Home Hydroponics
+ * File Name:          server_config.js
+ * Description:        
+ *                   
+ * 
+ * Author:             Daniel Yadov
+ * Created On:         10/12/2024
+ * Last Modified:      10/12/2024
+ * Version:            1.0.0
+ * Dependencies:       mysql2, amqplib, readline
+ * -------------------------------------------------------------------------
+ * Usage Instructions: 
+ * -------------------------------------------------------------------------
+ * Change Log:         1.0.0 - 10/12/2024 - Initial Release
+ * -------------------------------------------------------------------------
+ */
+
 const mysql = require('mysql2');
 const amqp = require('amqplib');
 const readline = require('readline');

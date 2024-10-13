@@ -1,3 +1,39 @@
+/**
+ * -------------------------------------------------------------------------
+ * Project Name:       Home Hydroponics
+ * File Name:          message_processor.js
+ * Description:        This program acts as a middleware for handling all
+ *                     uplink and downlink packets between the sensors 
+ *                     and the MySQL database using AMQP (RabbitMQ).
+ * 
+ *                     **Uplink Packets:** 
+ *                     - Receives data packets from various sensors via AMQP.
+ *                     - Processes and validates the incoming data.
+ *                     - Stores the sensor data in the MySQL database, ensuring
+ *                       data integrity and structure adherence.
+ * 
+ *                     **Downlink Packets:** 
+ *                     - Listens for commands or control messages sent to the sensors.
+ *                     - Processes these commands to adjust sensor configurations,
+ *                       initiate readings, or perform other control functions.
+ * 
+ *                     This program serves as a crucial intermediary, 
+ *                     ensuring seamless communication between the sensors
+ *                     and the database while maintaining efficient data 
+ *                     flow and control mechanisms.
+ * 
+ * Author:             Daniel Yadov
+ * Created On:         10/12/2024
+ * Last Modified:      10/12/2024
+ * Version:            1.0.0
+ * Dependencies:       mysql2, amqplib
+ * -------------------------------------------------------------------------
+ * Usage Instructions: This application can be hosted using either PM2 (preferred) or cron.
+ * -------------------------------------------------------------------------
+ * Change Log:         1.0.0 - 10/12/2024 - Initial Release
+ * -------------------------------------------------------------------------
+ */
+
 const mysql = require('mysql2');
 const amqp = require('amqplib');
 
