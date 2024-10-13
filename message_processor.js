@@ -121,7 +121,7 @@ con.getConnection(function(err, connection) {
 
 
 
-function insert_humid(packet) {
+async function insert_humid(packet) {
     let sql = `INSERT INTO humidity_data (zone1, zone2, zone3, zone4, zone5, zone6, zone7, zone8, serial, timestamp) VALUES (?)`;
     var values = [
         packet.zone1, 
@@ -135,16 +135,21 @@ function insert_humid(packet) {
         packet.serial,
         new Date()
     ];
-    con.query(sql, [values], function(error, data) {
-        if (error) throw error;
-        console.log(`Saved humidity data into DB at "${new Date()}`);
+    try {
+        const result = await con.promise().query(sql, [values]);
+        console.log(`Saved humidity data into DB at ${new Date()}`);
+        return result;
+    } 
+    catch (error) {
+        console.log(`Error while Storing to DB`);
+        console.error(error);
         return;
-    });
+    }
 };
 
-function insert_heartbeat(packet) {
+async function insert_heartbeat(packet) {
     let sql = `INSERT INTO heartbeat_data (battery, dev_time, temperature, dev_humidity, serial, timestamp) VALUES (?)`;
-    var values = [
+    const values = [
         packet.battery,
         new Date(packet.dev_time),
         packet.temperature,
@@ -152,15 +157,19 @@ function insert_heartbeat(packet) {
         packet.serial,
         new Date()
     ];
-    con.query(sql, [values], function(error, data) {
-        if (error) {
-            console.log(`Error while Storing to DB`);
-            return;
-        };
+
+    try {
+        const result = await con.promise().query(sql, [values]);
         console.log(`Saved heartbeat data into DB at ${new Date()}`);
-        return
-    });
+        return result;
+    } 
+    catch (error) {
+        console.log(`Error while Storing to DB`);
+        console.error(error);
+        return;
+    }
 }
+
 
 // Call the function to start receiving messages
 receiveMessage();
