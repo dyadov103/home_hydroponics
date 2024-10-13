@@ -195,12 +195,60 @@ const sendMessageToRabbitMQ = async (message) => {
     }
 };
 
+function generateRandomHumidityData() {
+    const randomHumidity = (min, max) => (Math.random() * (max - min) + min).toFixed(1); // Generate random float between min and max
+
+    const data = {
+        type: 'humidity',
+        zone1: parseFloat(randomHumidity(30, 80)), // Random value between 30 and 80
+        zone2: parseFloat(randomHumidity(30, 80)),
+        zone3: parseFloat(randomHumidity(30, 80)),
+        zone4: parseFloat(randomHumidity(30, 80)),
+        zone5: parseFloat(randomHumidity(30, 80)),
+        zone6: parseFloat(randomHumidity(30, 80)),
+        zone7: parseFloat(randomHumidity(30, 80)),
+        zone8: parseFloat(randomHumidity(30, 80)),
+        serial: generateSerial() // Generate a random serial number
+    };
+
+    return data;
+}
+
+function generateSerial() {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numbers = '0123456789';
+    const randomLetters = Array.from({ length: 3 }, () => letters.charAt(Math.floor(Math.random() * letters.length))).join('');
+    const randomNumbers = Array.from({ length: 6 }, () => numbers.charAt(Math.floor(Math.random() * numbers.length))).join('');
+    return randomLetters + randomNumbers; // Combine letters and numbers for the serial
+}
+
+const getCountFromTable = (tableName) => {
+    return new Promise((resolve, reject) => {
+        // Construct the query by inserting the table name directly into the string
+        const query = `SELECT COUNT(*) AS count FROM \`${tableName}\``;
+
+        console.log('Getting row count for table:', tableName);
+
+        connection.execute(query, (err, results) => {
+            if (err) {
+                reject(err); // Reject with error if query fails
+            } else {
+                resolve(results[0].count); // Resolve with the count value
+            }
+        });
+    });
+};
+
+
+
+
 // Menu for user interaction
 const showMenu = () => {
     console.log("\nSelect an option:");
     console.log("1. Check database tables");
     console.log("2. Send a message to RabbitMQ");
-    console.log("3. Exit");
+    console.log("3. Generate 100 humidity packets");
+    console.log("4. Exit");
     
     rl.question("Enter your choice (1-3): ", async (choice) => {
         switch (choice) {
@@ -216,6 +264,17 @@ const showMenu = () => {
                 });
                 break;
             case '3':
+                console.log("Begin Packet Spam");
+                let pre_db_count = await getCountFromTable("humidity_data");
+                for(let i = 0; i < 1000; i++) {
+                    let data  = JSON.stringify(generateRandomHumidityData());
+                    await sendMessageToRabbitMQ(data);
+                }
+                let db_count = await getCountFromTable("humidity_data");
+                let loss = ((1 - (db_count - pre_db_count) / 1000)) * 100; 
+                console.log(`Packet loss in DB: ${loss}`);
+                break;
+            case '4':
                 console.log("Exiting...");
                 connection.end();
                 rl.close();

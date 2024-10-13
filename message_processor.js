@@ -38,6 +38,14 @@ const mysql = require('mysql2');
 const amqp = require('amqplib');
 
 
+//Supported packets
+const supported_packets = [
+    "humidity",
+    "heartbeat",
+    "water_acknowledge"
+]
+
+
 const receiveMessage = async () => {
     try {
         // RabbitMQ connection URL with authentication
@@ -49,14 +57,14 @@ const receiveMessage = async () => {
         // Assert (create) a queue if it doesn't already exist
         await channel.assertQueue(queue);
 
-        console.log(`Waiting for messages in queue: "${queue}"`);
+        console.log(`Subscribed to queue: "${queue}"`);
 
         // Consume messages from the queue
         channel.consume(queue, (msg) => {
             if (msg !== null) {
                 const messageContent = msg.content.toString();
                 console.log(`Received message: "${messageContent}"`);
-
+                build_packet(messageContent);
                 // Acknowledge the message
                 channel.ack(msg);
             }
@@ -65,6 +73,34 @@ const receiveMessage = async () => {
         console.error('Error receiving messages:', error);
     }
 };
+
+function build_packet(message) {
+    try {
+        let parsed = JSON.parse(message);
+        if(supported_packets.includes(parsed.type)) {
+            switch(parsed.type) {
+                case supported_packets[0]:
+                    insert_telemetry(parsed);
+                    break;
+                case supported_packets[1]:
+                    console.log("heartbeat message!");
+                    break;
+                case supported_packets[2]:
+                    console.log("The plants have been watered!!");
+                    break;
+                default:
+                    console.log("Unrecognized event type");
+            }
+        } 
+        else {
+            console.log(`Recieved and unsupported packet type "${parsed.type}"`);
+        }
+    }
+    catch (error) {
+        console.log(`JSON is likely malformed or contains unwanted escape characters. Stop trying to break me :(`);
+        console.log(error);
+    }
+}
 
 
 
@@ -83,36 +119,25 @@ con.getConnection(function(err, connection) {
     connection.release();
 });
 
-let humid_data = {
-    zone1: "10",
-    zone2: "11",
-    zone3: "12",
-    zone4: "13",
-    zone5: "14",
-    zone6: "15",
-    zone7: "16",
-    zone8: "17",
-    serial: "123456",
-    timestamp: new Date()
-}
 
-function insert_telemetry() {
+
+function insert_telemetry(packet) {
     let sql = `INSERT INTO humidity_data (zone1, zone2, zone3, zone4, zone5, zone6, zone7, zone8, serial, timestamp) VALUES (?)`;
     var values = [
-        humid_data.zone1, 
-        humid_data.zone2, 
-        humid_data.zone3,
-        humid_data.zone4,
-        humid_data.zone5,
-        humid_data.zone6,
-        humid_data.zone7,
-        humid_data.zone8,
-        humid_data.serial,
-        humid_data.timestamp
+        packet.zone1, 
+        packet.zone2, 
+        packet.zone3,
+        packet.zone4,
+        packet.zone5,
+        packet.zone6,
+        packet.zone7,
+        packet.zone8,
+        packet.serial,
+        new Date()
     ];
     con.query(sql, [values], function(error, data) {
         if (error) throw error;
-        console.log(data);
+        console.log(`Saved humidity data into DB at "${new Date()}`);
         return;
     });
 };
