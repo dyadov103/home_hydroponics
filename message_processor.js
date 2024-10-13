@@ -64,7 +64,7 @@ const receiveMessage = async () => {
             if (msg !== null) {
                 const messageContent = msg.content.toString();
                 console.log(`Received message: "${messageContent}"`);
-                build_packet(messageContent);
+                packet_router(messageContent);
                 // Acknowledge the message
                 channel.ack(msg);
             }
@@ -74,7 +74,7 @@ const receiveMessage = async () => {
     }
 };
 
-function build_packet(message) {
+function packet_router(message) {
     try {
         let parsed = JSON.parse(message);
         if(supported_packets.includes(parsed.type)) {
