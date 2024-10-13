@@ -42,7 +42,7 @@ const amqp = require('amqplib');
 const supported_packets = [
     "humidity",
     "heartbeat",
-    "water_acknowledge"
+    "water_ack"
 ]
 
 
@@ -80,10 +80,10 @@ function packet_router(message) {
         if(supported_packets.includes(parsed.type)) {
             switch(parsed.type) {
                 case supported_packets[0]:
-                    insert_telemetry(parsed);
+                    insert_humid(parsed);
                     break;
                 case supported_packets[1]:
-                    console.log("heartbeat message!");
+                    insert_heartbeat(parsed);
                     break;
                 case supported_packets[2]:
                     console.log("The plants have been watered!!");
@@ -121,7 +121,7 @@ con.getConnection(function(err, connection) {
 
 
 
-function insert_telemetry(packet) {
+function insert_humid(packet) {
     let sql = `INSERT INTO humidity_data (zone1, zone2, zone3, zone4, zone5, zone6, zone7, zone8, serial, timestamp) VALUES (?)`;
     var values = [
         packet.zone1, 
@@ -142,7 +142,25 @@ function insert_telemetry(packet) {
     });
 };
 
+function insert_heartbeat(packet) {
+    let sql = `INSERT INTO heartbeat_data (battery, dev_time, temperature, dev_humidity, serial, timestamp) VALUES (?)`;
+    var values = [
+        packet.battery,
+        new Date(packet.dev_time),
+        packet.temperature,
+        packet.dev_humidity,
+        packet.serial,
+        new Date()
+    ];
+    con.query(sql, [values], function(error, data) {
+        if (error) {
+            console.log(`Error while Storing to DB`);
+            return;
+        };
+        console.log(`Saved heartbeat data into DB at ${new Date()}`);
+        return
+    });
+}
 
-//insert_telemetry();
 // Call the function to start receiving messages
 receiveMessage();

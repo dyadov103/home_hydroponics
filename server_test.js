@@ -1,7 +1,7 @@
 /**
  * -------------------------------------------------------------------------
  * Project Name:       Home Hydroponics
- * File Name:          server_config.js
+ * File Name:          server_test.js
  * Description:        
  *                   
  * 
@@ -151,6 +151,18 @@ const table_structs = [
             { name: 'serial', type: 'varchar(255)' },
             { name: 'timestamp', type: 'timestamp' }
         ]
+    },
+    {
+        table_name: "heartbeat_data",
+        columns: [
+            {name: 'battery', type: 'varchar(255)'},
+            {name: 'dev_time', type: 'timestamp'},
+            {name: 'temperature', type: 'varchar(255)'},
+            {name: 'dev_humidity', type: 'varchar(255)'},
+            {name: 'serial', type: 'varchar(255)'},
+            {name: 'timestamp', type: 'timestamp'}
+        ]
+
     }
     // Add more table structures here if needed
 ];
@@ -214,6 +226,21 @@ function generateRandomHumidityData() {
     return data;
 }
 
+function generateRandomHeartbeatData() {
+    const randomHeartbeat = (min, max) => (Math.random() * (max - min) + min).toFixed(1); // Generate random float between min and max
+
+    const data = {
+        type: 'heartbeat',
+        battery: parseFloat(randomHeartbeat(1, 100)),
+        dev_time: new Date(),
+        temperature: parseFloat(randomHeartbeat(30, 80)),
+        dev_humidity: parseFloat(randomHeartbeat(30, 80)),
+        serial: generateSerial()
+    };
+
+    return data;
+}
+
 function generateSerial() {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const numbers = '0123456789';
@@ -248,9 +275,10 @@ const showMenu = () => {
     console.log("1. Check database tables");
     console.log("2. Send a message to RabbitMQ");
     console.log("3. Generate 100 humidity packets");
-    console.log("4. Exit");
+    console.log("4. Generate 100 heartbeat packets");
+    console.log("5. Exit");
     
-    rl.question("Enter your choice (1-3): ", async (choice) => {
+    rl.question("Enter your choice (1-5): ", async (choice) => {
         switch (choice) {
             case '1':
                 console.log("Checking database tables...");
@@ -266,15 +294,28 @@ const showMenu = () => {
             case '3':
                 console.log("Begin Packet Spam");
                 let pre_db_count = await getCountFromTable("humidity_data");
-                for(let i = 0; i < 1000; i++) {
+                for(let i = 0; i < 100; i++) {
                     let data  = JSON.stringify(generateRandomHumidityData());
                     await sendMessageToRabbitMQ(data);
                 }
                 let db_count = await getCountFromTable("humidity_data");
-                let loss = ((1 - (db_count - pre_db_count) / 1000)) * 100; 
+                let loss = ((1 - (db_count - pre_db_count) / 100)) * 100; 
                 console.log(`Packet loss in DB: ${loss}`);
+                showMenu();
                 break;
             case '4':
+                console.log("Begin Packet Spam");
+                let pre_db_count_hb = await getCountFromTable("heartbeat_data");
+                for(let i = 0; i < 100; i++) {
+                    let data  = JSON.stringify(generateRandomHeartbeatData());
+                    await sendMessageToRabbitMQ(data);
+                }
+                let db_count_hb = await getCountFromTable("heartbeat_data");
+                let loss_hb = ((1 - (db_count_hb - pre_db_count_hb) / 100)) * 100; 
+                console.log(`Packet loss in DB: ${loss_hb}`);
+                showMenu();
+                break;
+            case '5':
                 console.log("Exiting...");
                 connection.end();
                 rl.close();
